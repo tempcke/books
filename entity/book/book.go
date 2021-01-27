@@ -3,6 +3,8 @@ package book
 import (
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Validation Errors
@@ -35,6 +37,7 @@ const (
 
 // Book entity
 type Book struct {
+	ID      string
 	Title   string
 	Author  string
 	PubDate time.Time
@@ -50,6 +53,7 @@ func NewBook(
 	status Status,
 ) Book {
 	return Book{
+		ID:      uuid.New().String(),
 		Title:   title,
 		Author:  author,
 		PubDate: pubdate,

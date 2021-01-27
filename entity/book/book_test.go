@@ -65,6 +65,15 @@ func TestBookValidation(t *testing.T) {
 	})
 }
 
+func TestBookID(t *testing.T) {
+	b1 := book.NewBook("first book", "john smith", time.Now(), rating, status)
+	b2 := book.NewBook("second one", "john smith", time.Now(), rating, status)
+	// book id should be a uuid string, which is 36 chars long
+	assertEqual(t, 36, len(b1.ID))
+	assertEqual(t, 36, len(b2.ID))
+	assertNotEqual(t, b1.ID, b2.ID)
+}
+
 func assertEqual(t *testing.T, want, got interface{}) {
 	t.Helper()
 	if got != want {
@@ -72,5 +81,12 @@ func assertEqual(t *testing.T, want, got interface{}) {
 			"Not Equal!\nWant: %v\t%T\nGot:  %v\t%T",
 			want, want,
 			got, got)
+	}
+}
+
+func assertNotEqual(t *testing.T, a, b interface{}) {
+	t.Helper()
+	if a == b {
+		t.Errorf("Should not be equal!\nA: %v\t%T\nB: %v\t%T", a, a, b, b)
 	}
 }
