@@ -21,5 +21,8 @@ Using Go as your language, create a CRUD API to manage a list of Books, fulfilli
 -----
 ## Todd's notes on decisions made
 
-### database updates
+### database for testing
+If production is going to hit a real postgres instance then I want the tests to hit a postgres instance.  There is not a reliable in-memory substutue to test postgreSQL queries.  Therefore I'm using the dockertest library which results in a 2 to 5 second lag time for the test as it spins up the container, but it is worth it.  Sometimes I use build tags to only run those integration tests on travis or circle etc so they do not slow down my normal test runs during development.
+
+### database update queries
 I personally do not like mutating db objects if it can be avoided.  For this reason if I had more time I would remove status and rating from the book table and instead keep the values in another table with a timestamp, the most recent one would be pulled with the book entity however the change history would be retained in the data store and mutations of the book row would not be needed.
