@@ -26,3 +26,50 @@ If production is going to hit a real postgres instance then I want the tests to 
 
 ### database update queries
 I personally do not like mutating db objects if it can be avoided.  For this reason if I had more time I would remove status and rating from the book table and instead keep the values in another table with a timestamp, the most recent one would be pulled with the book entity however the change history would be retained in the data store and mutations of the book row would not be needed.
+
+-----
+# BookServer
+    
+## RESTful API requests
+### Add Book
+```
+curl -X POST "http://localhost:8080/book" \
+     -H 'Content-Type: application/json' \
+     -H 'Accept: application/json' \
+     -d '{
+  "title": "Refactoring",
+  "author": "Martin Fowler",
+  "pubdate": "1999-06-28",
+  "rating": 3,
+  "status": "CheckedIn"
+}' | json_pp
+```
+
+### Change Status
+```
+curl -X PUT "http://localhost:8080/book/{bookId}/status/{status}" \
+     -H 'Accept: application/json' | json_pp
+```
+
+### Change Rating
+```
+curl -X PUT "http://localhost:8080/book/{bookId}/rating/{rating}" \
+     -H 'Accept: application/json' | json_pp
+```
+
+### List Books
+```
+curl -X GET "http://localhost:8080/book" \
+     -H 'Accept: application/json' | json_pp
+```
+
+### Get Book Detail
+```
+curl -X GET "http://localhost:8080/book/{bookId}" \
+     -H 'Accept: application/json' | json_pp
+```
+
+### Delete Book
+```
+curl -X DELETE "http://localhost:8080/book/{bookId}"
+```
