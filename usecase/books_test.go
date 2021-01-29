@@ -1,17 +1,17 @@
 package usecase_test
 
 import (
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tempcke/books/entity/book"
+	"github.com/tempcke/books/fake"
 	"github.com/tempcke/books/usecase"
 )
 
 func TestAddBook(t *testing.T) {
-	repo := newBookRepo()
+	repo := fake.NewBookRepo()
 	goodBook := makeBook("add book")
 	badBook := makeBook("") // empty title will not validate
 	assert.NoError(t, usecase.AddBook(repo, goodBook))
@@ -19,7 +19,7 @@ func TestAddBook(t *testing.T) {
 }
 
 func TestGetBook(t *testing.T) {
-	repo := newBookRepo()
+	repo := fake.NewBookRepo()
 	bIn := makeBook("get book")
 
 	t.Run("expect error if book not found", func(t *testing.T) {
@@ -36,7 +36,7 @@ func TestGetBook(t *testing.T) {
 }
 
 func TestRemoveBook(t *testing.T) {
-	repo := newBookRepo()
+	repo := fake.NewBookRepo()
 	b := makeBook("remove book")
 
 	// this is not a great test as the error is currently coming from the repo
@@ -56,7 +56,7 @@ func TestRemoveBook(t *testing.T) {
 }
 
 func TestListBooks(t *testing.T) {
-	repo := newBookRepo()
+	repo := fake.NewBookRepo()
 	a, b := makeBook("A"), makeBook("B")
 	repo.AddBook(a)
 	repo.AddBook(b)
@@ -79,7 +79,7 @@ func TestListBooks(t *testing.T) {
 }
 
 func TestUpdateBookStatus(t *testing.T) {
-	repo := newBookRepo()
+	repo := fake.NewBookRepo()
 	a := makeBook("update status")
 
 	t.Run("expect error when book does not exist", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestUpdateBookStatus(t *testing.T) {
 }
 
 func TestUpdateBookRating(t *testing.T) {
-	repo := newBookRepo()
+	repo := fake.NewBookRepo()
 	a := makeBook("update rating")
 
 	t.Run("expect error when book does not exist", func(t *testing.T) {
@@ -126,44 +126,4 @@ func TestUpdateBookRating(t *testing.T) {
 
 func makeBook(title string) book.Book {
 	return book.NewBook(title, "john smith", time.Now(), book.RateOne, book.StatusCheckedIn)
-}
-
-type bookRepo struct {
-	books map[string]book.Book
-}
-
-func newBookRepo() bookRepo {
-	return bookRepo{make(map[string]book.Book)}
-}
-
-func (r bookRepo) AddBook(book book.Book) error {
-	r.books[book.ID] = book
-	return nil
-}
-func (r bookRepo) RemoveBook(id string) error {
-	if _, ok := r.books[id]; !ok {
-		return errors.New("book not found")
-	}
-	delete(r.books, id)
-	return nil
-}
-func (r bookRepo) GetBookByID(id string) (book.Book, error) {
-	book, ok := r.books[id]
-	if !ok {
-		return book, errors.New("book not found")
-	}
-	return book, nil
-}
-func (r bookRepo) BookList() ([]book.Book, error) {
-	list := make([]book.Book, len(r.books))
-	i := 0
-	for _, b := range r.books {
-		list[i] = b
-		i++
-	}
-	return list, nil
-}
-func (r bookRepo) UpdateBook(book book.Book) error {
-	r.books[book.ID] = book
-	return nil
 }
