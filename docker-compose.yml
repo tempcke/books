@@ -1,0 +1,30 @@
+version: "3.2"
+
+services:
+  books-db:
+    image: postgres
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - books-data:/var/lib/postgresql/data
+    container_name: books-db
+
+  bookserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_PORT=${APP_PORT}
+      - DB_DSN=${DB_DSN}
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    container_name: books-server
+    depends_on:
+      - books-db
+
+volumes:
+  books-data:
