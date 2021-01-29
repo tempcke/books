@@ -12,7 +12,8 @@ import (
 
 // Errors
 var (
-	ErrRecordNotFound = errors.New("Record not found")
+	ErrRecordNotFound  = errors.New("Record not found")
+	ErrRecordNotUnique = errors.New("Record not unique")
 )
 
 // Postgres repository should NOT be used in production
@@ -33,6 +34,11 @@ func NewPostgresRepo(db *sql.DB) Postgres {
 
 // AddBook persists a book
 func (r Postgres) AddBook(b book.Book) error {
+	// custom error in case record already exists
+	if _, err := r.GetBookByID(b.ID); err == nil {
+		return ErrRecordNotUnique
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

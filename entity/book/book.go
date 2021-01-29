@@ -19,6 +19,11 @@ var (
 // Rating is a book rating from 1 to 3
 type Rating int
 
+// Int returns the int type
+func (r Rating) Int() int {
+	return int(r)
+}
+
 // Rating values
 const (
 	RateOne = Rating(iota + 1)
@@ -28,6 +33,10 @@ const (
 
 // Status is the status of the book, checked in or out
 type Status string
+
+func (s Status) String() string {
+	return string(s)
+}
 
 // Status values
 const (

@@ -53,6 +53,13 @@ func TestPostgresRepo(t *testing.T) {
 		assert.Equal(t, b.Status, bOut.Status)
 	})
 
+	t.Run("expect error when adding a book that already exists", func(t *testing.T) {
+		b := makeBook("already exists book")
+		r.AddBook(b)
+		err := r.AddBook(b)
+		assert.Equal(t, repository.ErrRecordNotUnique, err)
+	})
+
 	t.Run("list books", func(t *testing.T) {
 		// create books
 		a := makeBook("list book A")
