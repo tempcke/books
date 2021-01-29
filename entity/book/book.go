@@ -2,6 +2,7 @@ package book
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +23,9 @@ type Rating int
 // Int returns the int type
 func (r Rating) Int() int {
 	return int(r)
+}
+func (r Rating) String() string {
+	return strconv.Itoa(r.Int())
 }
 
 // Rating values

@@ -2,17 +2,18 @@ package rest
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
-	log "github.com/sirupsen/logrus"
 	"github.com/tempcke/books/entity/book"
+	"github.com/tempcke/books/internal"
 	"github.com/tempcke/books/usecase"
 )
 
 var dateFormat = "2006-01-02"
 
-func addBook(bookRepo usecase.BookReaderWriter, log *log.Logger) http.HandlerFunc {
+func addBook(bookRepo usecase.BookReaderWriter, log *internal.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data := BookModel{}
 		if err := decodeRequestData(w, r.Body, &data); err != nil {
@@ -46,7 +47,7 @@ func addBook(bookRepo usecase.BookReaderWriter, log *log.Logger) http.HandlerFun
 	}
 }
 
-func getBook(bookRepo usecase.BookReader, log *log.Logger) http.HandlerFunc {
+func getBook(bookRepo usecase.BookReader, log *internal.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bookID := chi.URLParam(r, "bookID")
 		b, err := usecase.GetBook(bookRepo, bookID)
@@ -59,7 +60,7 @@ func getBook(bookRepo usecase.BookReader, log *log.Logger) http.HandlerFunc {
 	}
 }
 
-func listBooks(bookRepo usecase.BookReader, log *log.Logger) http.HandlerFunc {
+func listBooks(bookRepo usecase.BookReader, log *internal.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		books, err := usecase.ListBooks(bookRepo)
 		if err != nil {
@@ -71,7 +72,7 @@ func listBooks(bookRepo usecase.BookReader, log *log.Logger) http.HandlerFunc {
 	}
 }
 
-func deleteBook(bookRepo usecase.BookReaderWriter, log *log.Logger) http.HandlerFunc {
+func deleteBook(bookRepo usecase.BookReaderWriter, log *internal.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bookID := chi.URLParam(r, "bookID")
 		err := usecase.RemoveBook(bookRepo, bookID)
@@ -85,5 +86,58 @@ func deleteBook(bookRepo usecase.BookReaderWriter, log *log.Logger) http.Handler
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func putBookStatus(bookRepo usecase.BookReaderWriter, log *internal.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bookID := chi.URLParam(r, "bookID")
+		b, err := usecase.GetBook(bookRepo, bookID)
+		if err != nil {
+			errorResponse(w, http.StatusNotFound, "bookId not found")
+			log.Debug("putBookStatus handler, id not found: " + bookID)
+			return
+		}
+
+		status := chi.URLParam(r, "status")
+
+		b, err = usecase.ChangeBookStatus(bookRepo, bookID, book.Status(status))
+		if err != nil {
+			log.Debug(err)
+			errorResponse(w, http.StatusBadRequest, "Failed to update book, are you passing a valid status?")
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		jsonResponse(w, NewBookModel(b))
+	}
+}
+
+func putBookRating(bookRepo usecase.BookReaderWriter, log *internal.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bookID := chi.URLParam(r, "bookID")
+		b, err := usecase.GetBook(bookRepo, bookID)
+		if err != nil {
+			errorResponse(w, http.StatusNotFound, "bookId not found")
+			log.Debug("putBookStatus handler, id not found: " + bookID)
+			return
+		}
+
+		rating := chi.URLParam(r, "rating")
+		value, err := strconv.Atoi(rating)
+		if err != nil {
+			log.Debug("putBookStatus handler, could not convert rating to int: " + rating)
+			errorResponse(w, http.StatusBadRequest, "Invalid rating, could not convert to int")
+		}
+
+		b, err = usecase.ChangeBookRating(bookRepo, bookID, book.Rating(value))
+		if err != nil {
+			log.Debug(err)
+			errorResponse(w, http.StatusBadRequest, "Failed to update book, are you passing a valid rating?")
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		jsonResponse(w, NewBookModel(b))
 	}
 }

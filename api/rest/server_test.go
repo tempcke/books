@@ -6,29 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tempcke/books/api/rest"
 	"github.com/tempcke/books/entity/book"
 	"github.com/tempcke/books/fake"
+	"github.com/tempcke/books/internal"
 )
 
 type jsonMap map[string]interface{}
 
 var (
-	logger = &logrus.Logger{
-		Out:   os.Stdout,
-		Level: logrus.DebugLevel,
-		Formatter: &logrus.TextFormatter{
-			TimestampFormat: "15:04:05",
-		},
-		Hooks: make(logrus.LevelHooks),
-	}
+	logger = internal.NewLogger()
 	repo   = fake.NewBookRepo()
 	server = rest.NewServer(repo, logger)
 )
@@ -208,6 +199,80 @@ func TestDeleteBook(t *testing.T) {
 	})
 }
 
+// PUT /book/{bookID}/status/{status}
+func TestPutStatus(t *testing.T) {
+	b := makeBook("put status book")
+
+	t.Run("update book that does not exist", func(t *testing.T) {
+		status := book.StatusCheckedOut
+		rr := httptestPut("/book/"+b.ID+"/status/"+status.String(), "")
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+	})
+
+	repo.AddBook(b)
+
+	t.Run("update status with invalid value", func(t *testing.T) {
+		status := "not-a-valid-status"
+		rr := httptestPut("/book/"+b.ID+"/status/"+status, "")
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		b2, _ := repo.GetBookByID(b.ID)
+		assert.Equal(t, b.Status, b2.Status) // ensure it hasn't changed
+	})
+
+	t.Run("change status", func(t *testing.T) {
+		status := book.StatusCheckedOut
+		rr := httptestPut("/book/"+b.ID+"/status/"+status.String(), "")
+		assert.Equal(t, http.StatusOK, rr.Code)
+		b2, _ := repo.GetBookByID(b.ID)
+		assert.Equal(t, status, b2.Status) // ensure is updated
+
+		// check response data structure
+		data := getJsonMapFromResponseBody(t, rr)
+		assertDataMatchesBook(t, data, b2)
+	})
+}
+
+// PUT /book/{bookID}/rating/{rating}
+func TestPutRating(t *testing.T) {
+	b := makeBook("put rating book")
+
+	t.Run("update book that does not exist", func(t *testing.T) {
+		rating := book.RateTwo
+		rr := httptestPut("/book/"+b.ID+"/rating/"+rating.String(), "")
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+	})
+
+	repo.AddBook(b)
+
+	t.Run("update rating with string value should fail", func(t *testing.T) {
+		rating := "A"
+		rr := httptestPut("/book/"+b.ID+"/rating/"+rating, "")
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		b2, _ := repo.GetBookByID(b.ID)
+		assert.Equal(t, b.Status, b2.Status) // ensure it hasn't changed
+	})
+
+	t.Run("update rating with invalid value should fail", func(t *testing.T) {
+		rating := "42"
+		rr := httptestPut("/book/"+b.ID+"/rating/"+rating, "")
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		b2, _ := repo.GetBookByID(b.ID)
+		assert.Equal(t, b.Status, b2.Status) // ensure it hasn't changed
+	})
+
+	t.Run("change rating", func(t *testing.T) {
+		rating := book.RateTwo
+		rr := httptestPut("/book/"+b.ID+"/rating/"+rating.String(), "")
+		assert.Equal(t, http.StatusOK, rr.Code)
+		b2, _ := repo.GetBookByID(b.ID)
+		assert.Equal(t, rating, b2.Rating) // ensure is updated
+
+		// check response data structure
+		data := getJsonMapFromResponseBody(t, rr)
+		assertDataMatchesBook(t, data, b2)
+	})
+}
+
 // http request helper functions
 func httptestPost(uri, jsonStr string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(http.MethodPost, uri, jsonReader(jsonStr))
@@ -222,6 +287,11 @@ func httptestGet(uri string) *httptest.ResponseRecorder {
 
 func httptestDelete(uri string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(http.MethodDelete, uri, nil)
+	return execReq(req)
+}
+
+func httptestPut(uri, body string) *httptest.ResponseRecorder {
+	req, _ := http.NewRequest(http.MethodPut, uri, jsonReader(body))
 	return execReq(req)
 }
 

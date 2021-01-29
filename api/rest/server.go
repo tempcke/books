@@ -3,9 +3,8 @@ package rest
 import (
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/go-chi/chi"
+	"github.com/tempcke/books/internal"
 	"github.com/tempcke/books/usecase"
 )
 
@@ -13,11 +12,11 @@ import (
 type Server struct {
 	http.Handler
 	bookRepo usecase.BookReaderWriter
-	log      *log.Logger
+	log      *internal.Logger
 }
 
 // NewServer constructs a Server
-func NewServer(bookRepo usecase.BookReaderWriter, logger *log.Logger) *Server {
+func NewServer(bookRepo usecase.BookReaderWriter, logger *internal.Logger) *Server {
 	server := new(Server)
 	server.bookRepo = bookRepo
 	server.log = logger
@@ -33,6 +32,8 @@ func (s *Server) initRouter() {
 		r.Route("/{bookID}", func(r chi.Router) {
 			r.Get("/", getBook(s.bookRepo, s.log))
 			r.Delete("/", deleteBook(s.bookRepo, s.log))
+			r.Put("/status/{status}", putBookStatus(s.bookRepo, s.log))
+			r.Put("/rating/{rating}", putBookRating(s.bookRepo, s.log))
 		})
 	})
 	s.Handler = r
